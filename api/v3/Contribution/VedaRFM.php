@@ -23,13 +23,13 @@ function _civicrm_api3_contribution_vedarfm_spec(&$spec) {
  */
 function civicrm_api3_contribution_vedarfm($params) {
     $sql = "DROP TABLE IF EXISTS ps_temp_rfm ";
-    
     try {
         CRM_Core_DAO::executeQuery($sql);
     }
     catch (Exception $e) {
         throw new API_Exception($e->getMessage(), $e->getCode());    
     }
+    $piGroupId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'payment_instrument', 'id', 'name');
 
     $sql  = ' CREATE TABLE ps_temp_rfm ';
     $sql .= ' AS ';
@@ -43,7 +43,7 @@ function civicrm_api3_contribution_vedarfm($params) {
     $sql .= ' , b.label AS payment_instrument ';
     $sql .= ' , MAX(a.receive_date) AS last_contribution_date ';
     $sql .= ' FROM civicrm_contribution AS a ';
-    $sql .= ' LEFT JOIN (SELECT * FROM civicrm_option_value WHERE option_group_id = 10) AS b ON a.payment_instrument_id = b.value ';
+    $sql .= " LEFT JOIN (SELECT * FROM civicrm_option_value WHERE option_group_id = $piGroupId) AS b ON a.payment_instrument_id = b.value ";
     $sql .= ' WHERE a.total_amount > 0 ';
     $sql .= ' GROUP BY a.contact_id, b.label ';
     
@@ -54,8 +54,8 @@ function civicrm_api3_contribution_vedarfm($params) {
         throw new API_Exception($e->getMessage(), $e->getCode());    
     }
 
-    $sql  = ' TRUNCATE TABLE civicrm_value_recency_frequency_monetary_17 ';
-
+    $rfmInfo = _vedarfm_getCustomInfo('Recency Frequency Monetary');
+    $sql  = "TRUNCATE TABLE {$rfmInfo['table_name']}";
     try {
         CRM_Core_DAO::executeQuery($sql);
     }
@@ -63,31 +63,31 @@ function civicrm_api3_contribution_vedarfm($params) {
         throw new API_Exception($e->getMessage(), $e->getCode());    
     }
 
-    $sql  = ' INSERT INTO civicrm_value_recency_frequency_monetary_17 ';
-    $sql .= ' (entity_id ';
-    $sql .= ' ,payment_instrument_88 ';
-    $sql .= ' ,avg_donation_89 ';
-    $sql .= ' ,first_contribution_date_110 ';
-    $sql .= ' ,last_contribution_date_90 ';
-    $sql .= ' ,number_of_contributions_in_last__91 ';
-    $sql .= ' ,number_of_contributions_in_last__92 ';
-    $sql .= ' ,number_of_contributions_in_last__93 ';
-    $sql .= ' ,number_of_contributions_in_last__94 ';
-    $sql .= ' ,number_of_contributions_in_last__95) ';
-    $sql .= ' SELECT a.contact_id ';
-    $sql .= ' , b.label AS payment_instrument ';
-    $sql .= ' , avg(a.total_amount) avg_donation ';
-    $sql .= ' , MIN(a.receive_date) AS first_contribution_date ';
-    $sql .= ' , MAX(a.receive_date) AS last_contribution_date ';
-    $sql .= ' , SUM(IF(a.receive_date > DATE_SUB(NOW(), INTERVAL 1 MONTH) , 1, 0)) countributions_last_1_month ';
-    $sql .= ' , SUM(IF(a.receive_date > DATE_SUB(NOW(), INTERVAL 3 MONTH) , 1, 0)) countributions_last_3_month ';
-    $sql .= ' , SUM(IF(a.receive_date > DATE_SUB(NOW(), INTERVAL 6 MONTH) , 1, 0)) countributions_last_6_month ';
-    $sql .= ' , SUM(IF(a.receive_date > DATE_SUB(NOW(), INTERVAL 12 MONTH) , 1, 0)) countributions_last_12_month ';
-    $sql .= ' , SUM(IF(a.receive_date > DATE_SUB(NOW(), INTERVAL 24 MONTH) , 1, 0)) countributions_last_24_month ';
-    $sql .= ' FROM civicrm_contribution AS a ';
-    $sql .= ' LEFT JOIN (SELECT * FROM civicrm_option_value WHERE option_group_id = 10) AS b ON a.payment_instrument_id = b.value ';
-    $sql .= ' WHERE a.total_amount > 0 ';
-    $sql .= ' GROUP BY a.contact_id, b.label ';
+    $sql  = " INSERT INTO {$rfmInfo['table_name']} ";
+    $sql .= " (entity_id ";
+    $sql .= " ,{$rfmInfo['payment_instrument']} ";
+    $sql .= " ,{$rfmInfo['avg_donation']} ";
+    $sql .= " ,{$rfmInfo['first_contribution_date']} ";
+    $sql .= " ,{$rfmInfo['last_contribution_date']} ";
+    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_1_month']} ";
+    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_3_months']} ";
+    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_6_months']} ";
+    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_12_months']} ";
+    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_24_months']}) ";
+    $sql .= " SELECT a.contact_id ";
+    $sql .= " , b.label AS payment_instrument ";
+    $sql .= " , avg(a.total_amount) avg_donation ";
+    $sql .= " , MIN(a.receive_date) AS first_contribution_date ";
+    $sql .= " , MAX(a.receive_date) AS last_contribution_date ";
+    $sql .= " , SUM(IF(a.receive_date > DATE_SUB(NOW(), INTERVAL 1 MONTH) , 1, 0)) countributions_last_1_month ";
+    $sql .= " , SUM(IF(a.receive_date > DATE_SUB(NOW(), INTERVAL 3 MONTH) , 1, 0)) countributions_last_3_month ";
+    $sql .= " , SUM(IF(a.receive_date > DATE_SUB(NOW(), INTERVAL 6 MONTH) , 1, 0)) countributions_last_6_month ";
+    $sql .= " , SUM(IF(a.receive_date > DATE_SUB(NOW(), INTERVAL 12 MONTH) , 1, 0)) countributions_last_12_month ";
+    $sql .= " , SUM(IF(a.receive_date > DATE_SUB(NOW(), INTERVAL 24 MONTH) , 1, 0)) countributions_last_24_month ";
+    $sql .= " FROM civicrm_contribution AS a ";
+    $sql .= " LEFT JOIN (SELECT * FROM civicrm_option_value WHERE option_group_id = $piGroupId) AS b ON a.payment_instrument_id = b.value ";
+    $sql .= " WHERE a.total_amount > 0 ";
+    $sql .= " GROUP BY a.contact_id, b.label ";
 
     try {
         CRM_Core_DAO::executeQuery($sql);
@@ -115,11 +115,12 @@ WHERE payment_instrument_id = 14;
     // Update a TAG that indicates if STT should thank the person for that contribution or not
     // Rule is it must be a donation
     // First insert any custom records for contributions that don't have them
-    $sql  = ' INSERT INTO civicrm_value_donor_information_3 ';
-    $sql .= ' (entity_id) ';
-    $sql .= ' SELECT a.id ';
-    $sql .= ' FROM civicrm_contribution AS a ';
-    $sql .= ' WHERE NOT EXISTS (SELECT 1 FROM civicrm_value_donor_information_3 b WHERE a.id = b.entity_id) ';
+    $donorInfo = _vedarfm_getCustomInfo('Donor Information');
+    $sql  = " INSERT INTO {$donorInfo['table_name']} ";
+    $sql .= " (entity_id) ";
+    $sql .= " SELECT a.id ";
+    $sql .= " FROM civicrm_contribution AS a ";
+    $sql .= " WHERE NOT EXISTS (SELECT 1 FROM {$donorInfo['table_name']} b WHERE a.id = b.entity_id) ";
 
     try {
         CRM_Core_DAO::executeQuery($sql);
@@ -130,9 +131,9 @@ WHERE payment_instrument_id = 14;
 
     // Now set the Thanking Required Flag
     // Set Everything to No thats null first
-    $sql  = ' UPDATE civicrm_value_donor_information_3 ';
-    $sql .= ' SET thank_you_required_111 = 0 ';
-    $sql .= ' WHERE thank_you_required_111 IS NULL ';
+    $sql  = " UPDATE {$donorInfo['table_name']} ";
+    $sql .= " SET {$donorInfo['thank_you_required']} = 0 ";
+    $sql .= " WHERE {$donorInfo['thank_you_required']} IS NULL ";
 
     try {
         CRM_Core_DAO::executeQuery($sql);
@@ -142,12 +143,47 @@ WHERE payment_instrument_id = 14;
     }
 
     // So we want to thank all donations that who are not paid by SO/JG/VMG
-    $sql  = ' UPDATE civicrm_value_donor_information_3 a ';
-    $sql .= ' JOIN civicrm_contribution b ON a.entity_id = b.id ';
-    $sql .= ' SET a.thank_you_required_111 = 1 ';
-    $sql .= ' WHERE b.payment_instrument_id NOT IN (13, 11, 10, 14, 6, 12, 16) ';
-    $sql .= ' AND b.contribution_type_id NOT IN (2, 4, 5, 6, 7, 8, 12, 13) ';
-    $sql .= ' AND a.thank_you_required_111 = 0 ';
+    $pi = CRM_Contribute_PseudoConstant::paymentInstrument();
+    $piList = array();
+    foreach ($pi as $val => $label) {
+      if (in_array($label, 
+          array('Gift Aid Reclaim', 
+            'Just Giving - Gift Aid', 
+            'Just Giving SMS', 
+            'Standing Order', 
+            'Virgin Money Giving', 
+            'Virgin Money Giving - Gift Aid', 
+            'Voucher - CAF GAYE'))) {
+        $piList[] = $val;
+      }
+    }
+    $piList = implode(', ', $piList); 
+
+    $ft = CRM_Contribute_PseudoConstant::financialType();
+    $ftList = array();
+    foreach ($ft as $val => $label) {
+      if (in_array($label, 
+          array('Grant UK', 
+            'Grant Non UK', 
+            'Merchandise', 
+            'JG - Income', 
+            'JG - Gift Aid', 
+            'Donation - Gift Aid', 
+            'VMG - Income', 
+            'VMG - Gift Aid'))) {
+        $ftList[] = $val;
+      }
+    }
+    $ftList = implode(', ', $ftList); 
+
+    $sql  = " UPDATE {$donorInfo['table_name']} a ";
+    $sql .= " JOIN civicrm_contribution b ON a.entity_id = b.id ";
+    $sql .= " SET a.{$donorInfo['thank_you_required']} = 1 ";
+    $sql .= " WHERE b.payment_instrument_id NOT IN ({$piList}) ";
+    if (!empty($ftList)) {
+      $sql .= " AND b.contribution_type_id NOT IN ({$ftList}) ";
+    }
+    $sql .= " AND a.{$donorInfo['thank_you_required']} = 0 ";
 
     try {
         CRM_Core_DAO::executeQuery($sql);
@@ -157,11 +193,12 @@ WHERE payment_instrument_id = 14;
     }
 
     // Now Set any Future Pay Contributions to not be thanked
-    $sql  = ' UPDATE civicrm_value_donor_information_3 a ';
-    $sql .= ' JOIN civicrm_contribution b ON a.entity_id = b.id ';
-    $sql .= ' SET a.thank_you_required_111 = 0 ';
-    $sql .= ' WHERE EXISTS (SELECT 1 FROM civicrm_value_future_pay_18 d WHERE d.entity_id = b.contact_id) ';
-    $sql .= ' AND a.thank_you_required_111 = 1 ';
+    $futurePayInfo = _vedarfm_getCustomInfo('Future Pay');
+    $sql  = " UPDATE {$donorInfo['table_name']} a ";
+    $sql .= " JOIN civicrm_contribution b ON a.entity_id = b.id ";
+    $sql .= " SET a.{$donorInfo['thank_you_required']} = 0 ";
+    $sql .= " WHERE EXISTS (SELECT 1 FROM {$futurePayInfo['table_name']} d WHERE d.entity_id = b.contact_id) ";
+    $sql .= " AND a.{$donorInfo['thank_you_required']} = 1 ";
 
     try {
         CRM_Core_DAO::executeQuery($sql);
@@ -173,5 +210,27 @@ WHERE payment_instrument_id = 14;
 
     return civicrm_api3_create_success(1, $params, NULL, NULL); 
 
+}
+
+function _vedarfm_getCustomInfo($title) {
+  $customInfo = array();
+
+  $sql = "
+SELECT     g.table_name, f.name, f.column_name, f.label as title
+FROM       civicrm_custom_field f
+INNER JOIN civicrm_custom_group g ON f.custom_group_id = g.id
+WHERE      ( g.name = %1 )
+";
+  $params = array(1 => array($title, 'String'));
+  $dao    = CRM_Core_DAO::executeQuery($sql, $params);
+  
+  while ($dao->fetch()) {
+    $customInfo['table_name'] = $dao->table_name;
+    $customInfo[strtolower($dao->name)]   = 
+      array('column_name' => $dao->column_name, 
+        'title' => $dao->title, 
+        'name'  => $dao->name,);
+  }
+  return $customInfo;
 }
 

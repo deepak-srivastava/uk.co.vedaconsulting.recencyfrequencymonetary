@@ -55,7 +55,7 @@ function civicrm_api3_contribution_vedarfm($params) {
         throw new API_Exception($e->getMessage(), $e->getCode());    
     }
 
-    $rfmInfo = _vedarfm_getCustomInfo('Recency Frequency Monetary');
+    $rfmInfo = _vedarfm_getCustomInfo('Recency_Frequency_Monetary');
     CRM_Core_Error::debug_var( '$rfmInfo', $rfmInfo );
     $sql  = "TRUNCATE TABLE {$rfmInfo['table_name']}";
     CRM_Core_Error::debug_var( '$sql', $sql );
@@ -119,7 +119,7 @@ WHERE payment_instrument_id = 14;
     // Update a TAG that indicates if STT should thank the person for that contribution or not
     // Rule is it must be a donation
     // First insert any custom records for contributions that don't have them
-    $donorInfo = _vedarfm_getCustomInfo('Donor Information');
+    $donorInfo = _vedarfm_getCustomInfo('Donor_Information');
     CRM_Core_Error::debug_var( '$donorInfo', $donorInfo );
     $sql  = " INSERT INTO {$donorInfo['table_name']} ";
     $sql .= " (entity_id) ";
@@ -201,7 +201,7 @@ WHERE payment_instrument_id = 14;
     }
 
     // Now Set any Future Pay Contributions to not be thanked
-    $futurePayInfo = _vedarfm_getCustomInfo('Future Pay');
+    $futurePayInfo = _vedarfm_getCustomInfo('Future_Pay');
     CRM_Core_Error::debug_var( '$futurePayInfo', $futurePayInfo );
     $sql  = " UPDATE {$donorInfo['table_name']} a ";
     $sql .= " JOIN civicrm_contribution b ON a.entity_id = b.id ";

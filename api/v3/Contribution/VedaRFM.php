@@ -68,15 +68,15 @@ function civicrm_api3_contribution_vedarfm($params) {
 
     $sql  = " INSERT INTO {$rfmInfo['table_name']} ";
     $sql .= " (entity_id ";
-    $sql .= " ,{$rfmInfo['payment_instrument']} ";
-    $sql .= " ,{$rfmInfo['avg_donation']} ";
-    $sql .= " ,{$rfmInfo['first_contribution_date']} ";
-    $sql .= " ,{$rfmInfo['last_contribution_date']} ";
-    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_1_month']} ";
-    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_3_months']} ";
-    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_6_months']} ";
-    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_12_months']} ";
-    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_24_months']}) ";
+    $sql .= " ,{$rfmInfo['payment_instrument']['column_name']} ";
+    $sql .= " ,{$rfmInfo['avg_donation']['column_name']} ";
+    $sql .= " ,{$rfmInfo['first_contribution_date']['column_name']} ";
+    $sql .= " ,{$rfmInfo['last_contribution_date']['column_name']} ";
+    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_1_month']['column_name']} ";
+    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_3_months']['column_name']} ";
+    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_6_months']['column_name']} ";
+    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_12_months']['column_name']} ";
+    $sql .= " ,{$rfmInfo['number_of_contributions_in_last_24_months']['column_name']}) ";
     $sql .= " SELECT a.contact_id ";
     $sql .= " , b.label AS payment_instrument ";
     $sql .= " , avg(a.total_amount) avg_donation ";
@@ -138,8 +138,8 @@ WHERE payment_instrument_id = 14;
     // Now set the Thanking Required Flag
     // Set Everything to No thats null first
     $sql  = " UPDATE {$donorInfo['table_name']} ";
-    $sql .= " SET {$donorInfo['thank_you_required']} = 0 ";
-    $sql .= " WHERE {$donorInfo['thank_you_required']} IS NULL ";
+    $sql .= " SET {$donorInfo['thank_you_required']['column_name']} = 0 ";
+    $sql .= " WHERE {$donorInfo['thank_you_required']['column_name']} IS NULL ";
     CRM_Core_Error::debug_var( '$sql', $sql );
 
     try {
@@ -185,12 +185,12 @@ WHERE payment_instrument_id = 14;
 
     $sql  = " UPDATE {$donorInfo['table_name']} a ";
     $sql .= " JOIN civicrm_contribution b ON a.entity_id = b.id ";
-    $sql .= " SET a.{$donorInfo['thank_you_required']} = 1 ";
+    $sql .= " SET a.{$donorInfo['thank_you_required']['column_name']} = 1 ";
     $sql .= " WHERE b.payment_instrument_id NOT IN ({$piList}) ";
     if (!empty($ftList)) {
       $sql .= " AND b.contribution_type_id NOT IN ({$ftList}) ";
     }
-    $sql .= " AND a.{$donorInfo['thank_you_required']} = 0 ";
+    $sql .= " AND a.{$donorInfo['thank_you_required']['column_name']} = 0 ";
     CRM_Core_Error::debug_var( '$sql', $sql );
 
     try {
@@ -205,9 +205,9 @@ WHERE payment_instrument_id = 14;
     CRM_Core_Error::debug_var( '$futurePayInfo', $futurePayInfo );
     $sql  = " UPDATE {$donorInfo['table_name']} a ";
     $sql .= " JOIN civicrm_contribution b ON a.entity_id = b.id ";
-    $sql .= " SET a.{$donorInfo['thank_you_required']} = 0 ";
+    $sql .= " SET a.{$donorInfo['thank_you_required']['column_name']} = 0 ";
     $sql .= " WHERE EXISTS (SELECT 1 FROM {$futurePayInfo['table_name']} d WHERE d.entity_id = b.contact_id) ";
-    $sql .= " AND a.{$donorInfo['thank_you_required']} = 1 ";
+    $sql .= " AND a.{$donorInfo['thank_you_required']['column_name']} = 1 ";
     CRM_Core_Error::debug_var( '$sql', $sql );
 
     try {

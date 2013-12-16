@@ -46,6 +46,7 @@ function civicrm_api3_contribution_vedarfm($params) {
     $sql .= " LEFT JOIN (SELECT * FROM civicrm_option_value WHERE option_group_id = $piGroupId) AS b ON a.payment_instrument_id = b.value ";
     $sql .= ' WHERE a.total_amount > 0 ';
     $sql .= ' GROUP BY a.contact_id, b.label ';
+    CRM_Core_Error::debug_var( '$sql', $sql );
     
     try {
         CRM_Core_DAO::executeQuery($sql);
@@ -55,7 +56,9 @@ function civicrm_api3_contribution_vedarfm($params) {
     }
 
     $rfmInfo = _vedarfm_getCustomInfo('Recency Frequency Monetary');
+    CRM_Core_Error::debug_var( '$rfmInfo', $rfmInfo );
     $sql  = "TRUNCATE TABLE {$rfmInfo['table_name']}";
+    CRM_Core_Error::debug_var( '$sql', $sql );
     try {
         CRM_Core_DAO::executeQuery($sql);
     }
@@ -88,6 +91,7 @@ function civicrm_api3_contribution_vedarfm($params) {
     $sql .= " LEFT JOIN (SELECT * FROM civicrm_option_value WHERE option_group_id = $piGroupId) AS b ON a.payment_instrument_id = b.value ";
     $sql .= " WHERE a.total_amount > 0 ";
     $sql .= " GROUP BY a.contact_id, b.label ";
+    CRM_Core_Error::debug_var( '$sql', $sql );
 
     try {
         CRM_Core_DAO::executeQuery($sql);
@@ -116,11 +120,13 @@ WHERE payment_instrument_id = 14;
     // Rule is it must be a donation
     // First insert any custom records for contributions that don't have them
     $donorInfo = _vedarfm_getCustomInfo('Donor Information');
+    CRM_Core_Error::debug_var( '$donorInfo', $donorInfo );
     $sql  = " INSERT INTO {$donorInfo['table_name']} ";
     $sql .= " (entity_id) ";
     $sql .= " SELECT a.id ";
     $sql .= " FROM civicrm_contribution AS a ";
     $sql .= " WHERE NOT EXISTS (SELECT 1 FROM {$donorInfo['table_name']} b WHERE a.id = b.entity_id) ";
+    CRM_Core_Error::debug_var( '$sql', $sql );
 
     try {
         CRM_Core_DAO::executeQuery($sql);
@@ -134,6 +140,7 @@ WHERE payment_instrument_id = 14;
     $sql  = " UPDATE {$donorInfo['table_name']} ";
     $sql .= " SET {$donorInfo['thank_you_required']} = 0 ";
     $sql .= " WHERE {$donorInfo['thank_you_required']} IS NULL ";
+    CRM_Core_Error::debug_var( '$sql', $sql );
 
     try {
         CRM_Core_DAO::executeQuery($sql);
@@ -184,6 +191,7 @@ WHERE payment_instrument_id = 14;
       $sql .= " AND b.contribution_type_id NOT IN ({$ftList}) ";
     }
     $sql .= " AND a.{$donorInfo['thank_you_required']} = 0 ";
+    CRM_Core_Error::debug_var( '$sql', $sql );
 
     try {
         CRM_Core_DAO::executeQuery($sql);
@@ -194,11 +202,13 @@ WHERE payment_instrument_id = 14;
 
     // Now Set any Future Pay Contributions to not be thanked
     $futurePayInfo = _vedarfm_getCustomInfo('Future Pay');
+    CRM_Core_Error::debug_var( '$futurePayInfo', $futurePayInfo );
     $sql  = " UPDATE {$donorInfo['table_name']} a ";
     $sql .= " JOIN civicrm_contribution b ON a.entity_id = b.id ";
     $sql .= " SET a.{$donorInfo['thank_you_required']} = 0 ";
     $sql .= " WHERE EXISTS (SELECT 1 FROM {$futurePayInfo['table_name']} d WHERE d.entity_id = b.contact_id) ";
     $sql .= " AND a.{$donorInfo['thank_you_required']} = 1 ";
+    CRM_Core_Error::debug_var( '$sql', $sql );
 
     try {
         CRM_Core_DAO::executeQuery($sql);
